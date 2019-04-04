@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Hello Electron</title>
+    </head>
+    <link href="ASSETS/custom.css" rel="stylesheet" type="text/css">
+    <body>
+        <div style="float: left; width:96%; height: 30px; -webkit-app-region: drag"></div>
+        <div style="float: left; width:2%; margin: 4px;"><img src="ASSETS/close.png" id="close"/></div>
+        <header id="header" style="display:none;">
+            <img src="ASSETS/logo.jpg" alt="JavaScript" style="float: right;" id="logoimage" >
+        </header>
+
+        <div id="intro" style="text-align: center; height: 290px; display: none">
+            <img src="ASSETS/logo.jpg" alt="JavaScript" id="btn" class="introimage" style="width: 30%; margin: 180px auto; cursor: pointer; display: none;" >
+        </div>
+        <!-----------------------------BODY------------------------------>
+        <section>
+            <!--<input type="button" value="Connect to mysql" id="btn"/>-->
+            
+            <div id="select_chk" class="select_chk" >
+                <label>
+                  <input type="radio" class="option-input radio" name="example" disabled/>
+                    DB로 검색
+                    <span style="color:red">(사용중지)</span>
+                </label>
+                <label>
+                  <input type="radio" class="option-input radio" name="example" checked />
+                    API로 검색
+                </label>
+            </div>
+            <!--
+            <div id="select_chk" class="select_chk" >
+              <label><input type="radio" value='0' id="db_chk" name="radio_chk" disabled >DB로 검색</label>
+              <label><input type="radio" value='1' id="api_chk" name="radio_chk" checked="checked">API로 검색</label>
+            </div>
+            -->
+            <div id="select_input" class="select_input"  style="display:none">
+              <input type="text" id="first_name" value="" onkeydown="enterresult();" placeholder="ID 입력"/>
+              <input type="button" value="검색" id="select" />
+            </div>
+
+            <div class="container">
+              <ul class="tabs">
+                  <li><a href="#tab1" id="tab1_atag">이용자정보</a></li>
+                  <li><a href="#tab2" id="tab2_atag">대출현황</a></li>
+                  <li><a href="#tab3" id="tab3_atag">대출이력</a></li>
+                  <li><a href="#tab4" id="tab4_atag">비치희망신청내역</a></li>
+              </ul>
+              <div class="tab_container">
+                <input type="hidden" id="rec_key_public" value="">
+                <div id="tab1" class="tab_content"></div>
+                <div id="tab2" class="tab_content"></div>
+                <div id="tab3" class="tab_content">
+                  <div class="pagination" id="pagination">
+                    <input type="hidden" id="pageno" value="">
+                  </div>
+                  <p id="result_table_retunlist_999" class="result_table_retunlist_999"><sapn id="onemonthlate" style="font-weight: bold"></sapn> ~ <span id=today></span> 대출내역입니다.</p>
+                  <table id="result_table_retunlist">
+                    <thead>
+                      <tr>
+                        <th>TITLE</th>
+                        <th style="width:13%">REG_KEY</th>
+                        <th style="width:13%">BOOK_NO</th>
+                        <th style="width:13%">LOAN_DATE</th>
+                        <th style="width:17%">RETURN_DATE</th>
+                      </tr>
+                    </thead>
+                    <tbody id="result_table_retunlist_777"></tbody>
+                  </table>
+                </div>
+                <div id="tab4" class="tab_content">
+                    <div class="pagination" id="pagination_furnish">
+                      <input type="hidden" id="pageno_furish" value="">
+                    </div>
+                    <p id="result_table_furnish_999" class="result_table_retunlist_999">비치희망 신청권수는 <sapn id="furnish_cnt" style="font-weight: bold"></sapn>권 입니다.</p>
+                    <table id="result_table_furnish">
+                        <thead>
+                          <tr>
+                            <th style="width:13%">REC_KEY</th>
+                            <th>TITLE</th>
+                            <th style="width:13%">AUTHOR</th>
+                            <th style="width:17%">ISBN</th>
+                          </tr>
+                        </thead>
+                        <tbody id="result_table_furnish_777"></tbody>
+                      </table>
+                  </div>
+              </div>
+            </div>
+
+            
+            
+            <div id="result"></div>
+            <table id="modify_table" style="display: none;">
+              <tbody>
+                <tr>
+                  <th>first_name</th>
+                  <th>last_name</th>
+                  <th>modify</th>
+                </tr>
+                <tr>
+                  <input type="hidden" value="" id="modify_table_id"/>
+                  <td><input type="text" value="" id="modify_table_first_name"></td>
+                  <td><input type="text" value="" id="modify_table_last_name"></td>
+                  <td><button id="modify_table_submit">수정</button></td>
+                </tr>
+              </tbody>
+            </table>
+        </section>
+        <!-----------------------------BODY------------------------------>
+        
+    </body>
+
+
+
+
+
+
+
+    <script>
+        //========================= DB 연결==============================
+        var $ = require('jquery');
+        var mysql = require('mysql');
+        var conn = mysql.createConnection({
+          });
+        //========================= DB 연결==============================
+
+        $(function(){
+          //=========================실행시 fade-in========================
+          console.log('실행이되나 이거');
+          $("#intro").fadeIn(3000);
+          $(".introimage").fadeIn(3000);
+        });
+        //========================= 구동 프로세스 ==============================
+        $(document).ready(() => {
+          $('#close').click(() => {
+            console.log('닫기 클릭함');
+            var remote = require('electron').remote;
+            var window = remote.getCurrentWindow();
+            window.close();
+          });
+          //========================= 디자인 스크립트=======================
+          $(".tab_content").hide(); 
+	        $("ul.tabs li:first").addClass("active").show(); 
+	        $(".tab_content:first").show(); 
+	        $("ul.tabs li").click(function() {
+		        $("ul.tabs li").removeClass("active"); 
+		        $(this).addClass("active"); 
+		        $(".tab_content").hide(); 
+		        var activeTab = $(this).find("a").attr("href");
+		        $(activeTab).fadeIn(); 
+		        return false;
+	        });
+          //========================= 디자인 스크립트=======================
+          $('#btn').click(() => {
+            var chk = 0;
+            conn.connect((err) => {
+            if(err){
+              return console.log(err.stack);
+              chk = 0;
+            } else {
+              chk = 1;
+              alert('연결 성공');
+              console.log("Conn Success");
+            }
+            if(chk === 1){
+              //$("#btn").hide();
+              //$("#intro").hide();
+              $("#intro").fadeOut(1500);
+              $("#btn").fadeOut(1500);
+              setTimeout(intro, 1500);
+            }
+            });
+          });
+          function intro(){
+            $("#select_input").show();
+            $('#select_chk').show();
+            $('#header').show();
+          }
+          //---------------------------------------------------------------이용자 검색----------------------------------------------------------------------------------------
+          $('#select').click(() => {
+            $('#tab1_atag').bind("click", ()=> {// 강제 클릭
+              console.log('tab1 click!!');
+            });
+            $("#tab1_atag").trigger("click"); // 강제 클릭
+            $('#result_table').remove();
+            $('#result_table_sub').remove();
+            $('[id^=result_table_loan_').remove();
+            $('#result_table_retunlist > tbody').empty();
+            $('#pagination > a').remove();
+            var radio_value = $("input[name='radio_chk']:checked").val();
+            console.log("radio check : "+radio_value);
+            var first_name = $("#first_name").val();
+
+            //----------------------------------------이용자검색(DB)--------------------------------
+            if(radio_value === '0'){
+              var sql = "select * from contacts where first_name = '"+first_name+"'";
+              console.log(sql);
+              conn.query(sql, (err, rows) =>{
+              if(err){
+                return console.log("now select ", err);
+              }
+              console.log(rows);
+              console.log(rows.length);
+              $('#modify_table').hide();
+              if(rows.length === 0){
+                $('#result').append('<table id="result_table"><tr><th>first_name</th><th>last_name</th><th>modify</th></tr>'
+                                    +'<tr><td colspan="3" id="modify_td_first" style="text-align:center">조회된 결과가 없습니다.</td></tr></table>');
+              } else {
+                $('#result').append('<table id="result_table" ><tr><th>first_name</th><th>last_name</th><th>modify</th></tr><tr><td id="modify_td_first">'+
+                                  rows[0].first_name+'</td><td id="modify_td_last">'+rows[0].last_name+'</td><td>'
+                                  +'<button value="'+rows[0].id+'" id="modify_id" onclick="modify(\''+rows[0].id+'\');">수정</button></td></tr></table>');
+              }
+              });
+              //----------------------------------------이용자검색(DB)---------------------------------
+              //======================================================================================
+              //----------------------------------------이용자검색(API)--------------------------------
+            } else {
+              $(".container").show();
+              var request = require('request');
+              var obj;
+              var obj_v2;
+              var rec_key;
+              request(url1, (err,res, body) => {
+                obj = JSON.parse(body);
+                obj_v2 = obj.USER_DATA;
+
+                if(obj_v2 == undefined){
+                  console.log('nullllllll');
+                  var flag = '0';
+                } else {
+                  console.log('not null');
+                  var flag = obj_v2[0].SEARCH_COUNT;
+                }
+                console.log("object : "+obj);
+                console.log("flag : "+flag);
+                if(flag !== '0'){
+                  var user_code = '';
+                  switch(obj_v2[1].USER_CLASS){
+                    case '0':
+                      user_code = '정상';
+                      break;
+                    case '1':
+                      user_code = '대출정지';
+                      break;
+                    case '2':
+                      user_code = '제적';
+                      break;
+                    case '3':
+                      user_code = '탈퇴';
+                      break;
+                    default:
+                      user_code = 'NULL';
+                      break;
+                  }
+                  var gpin_sex = '';
+                  if(obj_v2[1].GPIN_SEX === '0' ){
+                    gpin_sex = '남자';
+                  } else if(obj_v2[1].GPIN_SEX === '1'){
+                    gpin_sex = '여자';
+                  } else {
+                    gpin_sex = 'NULL';
+                  }
+                  console.log("USER_CODE ::: "+user_code);
+                  $('#tab1').append('<table id="result_table">'
+                                    +'<tr>'
+                                    +'<th>REC_KEY</th>'
+                                    +'<th>USER_ID</th>'
+                                    +'<th>NAME</th>'
+                                    +'<th>BIRTHDAY</th>'
+                                    +'<th>GPIN_SEX</th>'
+                                    +'</tr>'
+                                    +'<td>'+obj_v2[1].REC_KEY+'</td>'
+                                    +'<td>'+obj_v2[1].USER_ID+'</td>'
+                                    +'<td>'+obj_v2[1].NAME+'</td>'
+                                    +'<td>'+obj_v2[1].BIRTHDAY+'</td>'
+                                    +'<td>'+gpin_sex+'</td>'
+                                    +'</tr>'
+                                    +'</table>');
+                  $('#tab1').append('<table id="result_table_sub">'
+                                    +'<tr>'
+                                    +'<th>USER_CLASS</th>'
+                                    +'<th>IPIN_HASH</th>'
+                                    +'</tr>'
+                                    +'<td>'+user_code+'</td>'
+                                    +'<td>'+obj_v2[1].IPIN_HASH+'</td>'
+                                    +'</td>'
+                                    +'</tr>'
+                                    +'</table>');
+                  $('#rec_key_public').val(obj_v2[1].REC_KEY);
+                } else {
+                  $('#tab1').append('<table id="result_table">'
+                                    +'<tr>'
+                                    +'<th>REC_KEY</th>'
+                                    +'<th>USER_ID</th>'
+                                    +'<th>NAME</th>'
+                                    +'<th>BIRTHDAY</th>'
+                                    +'<th>USER_MANAGE_CODE</th>'
+                                    +'</tr>'
+                                    +'<td colspan="5">조회된 결과가 없습니다.</td></tr></table>');
+                }
+              });
+            }
+            //----------------------------------------이용자검색(API)--------------------------------
+            //======================================================================================
+          });
+          
+          //---------------------------------대출현황(API)---------------------------------
+          $('#tab2_atag').click(() => {
+            $('[id^=result_table_loan_').remove(); // id가 해당값으로 시작하는 모든값 제거
+            var request = require('request');
+            var rec_key = $('#rec_key_public').val();
+            request(url1, (err, res, body) => {
+              var obj = JSON.parse(body);
+              console.log(obj);
+              var obj_v2 = obj.LIST_DATA;
+              console.log("search_count : "+obj_v2[0].SEARCH_COUNT);
+              if(obj_v2[0].SEARCH_COUNT === 0){
+                  $('#tab2').append('<table id="result_table_loan_1">'
+                                    +'<tr>'
+                                    +'<th style="width:*">TITLE_INFO</th>'
+                                    +'<th style="width:13%">REG_NO</th>'
+                                    +'<th style="width:13%">BOOK_KEY</th>'
+                                    +'<th style="width:13%">LOAN_DATE</th>'
+                                    +'<th style="width:17%">RETURN_PLAN_DATE</th>'
+                                    +'<th style="width:13%">MANAGE_CODE</th>'
+                                    +'</tr>'
+                                    +'<td colspan="5">대출중인 도서가 없습니다.</td>'
+                                    +'</tr>'
+                                    +'</table>');
+              } else {
+                for(var i=1; i<=obj_v2[0].SEARCH_COUNT; i++){
+                  $('#tab2').append('<table id="result_table_loan_'+i+'">'
+                                        +'<tr>'
+                                        +'<th style="width:*">TITLE_INFO</th>'
+                                        +'<th style="width:13%">REG_NO</th>'
+                                        +'<th style="width:13%">BOOK_KEY</th>'
+                                        +'<th style="width:13%">LOAN_DATE</th>'
+                                        +'<th style="width:17%">RETURN_PLAN_DATE</th>'
+                                        +'<th style="width:13%">MANAGE_CODE</th>'
+                                        +'</tr>'
+                                        +'<td>'+obj_v2[i].TITLE_INFO+'</td>'
+                                        +'<td>'+obj_v2[i].REG_NO+'</td>'
+                                        +'<td>'+obj_v2[i].BOOK_KEY+'</td>'
+                                        +'<td>'+obj_v2[i].LOAN_DATE+'</td>'
+                                        +'<td>'+obj_v2[i].RETURN_PLAN_DATE+'</td>'
+                                        +'<td>'+obj_v2[i].MANAGE_CODE+'</td>'
+                                        +'</tr>'
+                                        +'</table>');
+                }
+              }
+            });
+          });
+          //-------------------------------------------대출현황---------------------------------------------
+          //====================================================================================
+          //-----------------------------------------대출이력(API)---------------------------------
+          $('#tab3_atag').click(() => {
+            $('#result_table_retunlist > tbody').empty();
+            $('#pagination > a').remove();
+            var request = require('request');
+            var newDate = new Date();
+            var yyyy = newDate.getFullYear();
+            var mm = newDate.getMonth()+1;
+            var dd = newDate.getDate();
+            if(mm < 10) mm = "0"+mm;
+            if(dd < 10) dd = "0"+dd;
+            var today = yyyy+""+mm+""+dd;
+            var onemonthlate = yyyy+""+mm-1+""+dd;
+            $('#onemonthlate').text(onemonthlate);
+            $('#today').text(today);
+            var rec_key = $('#rec_key_public').val();
+            var pageno = 1;
+            console.log("url : "+url3);
+            $('#pageno').val(pageno);
+            request(url3, (err, res, body) => {
+              var obj = JSON.parse(body);
+              var obj_v2 = obj.LIST_DATA;
+              console.log(obj);
+              console.log("length : "+obj_v2.length);
+              if(obj_v2[0].SEARCH_COUNT !== 0 ){
+                for(var i=1; i<obj_v2.length; i++){
+                  $('#result_table_retunlist > tbody:first').append('<tr>'
+                                                                    +'<td>'+obj_v2[i].TITLE+'</td>'
+                                                                    +'<td>'+obj_v2[i].REC_KEY+'</td>'
+                                                                    +'<td>'+obj_v2[i].REG_NO+'</td>'
+                                                                    +'<td>'+obj_v2[i].LOAN_DATE+'</td>'
+                                                                    +'<td>'+obj_v2[i].RETURN_DATE+'</td>'
+                                                                    +'</tr>'
+                                                                    );
+                }
+                var paging_temp = obj_v2[0].SEARCH_COUNT / 10;
+                var paging = Math.floor(paging_temp); // 소수점 버림
+                var pageno = 1;
+                console.log("paging : "+paging);
+                if(paging > 1){
+                  $('#pagination').append('<a href="#" id="result_table_retunlist_888" onclick=pagination(\''+1+'\')>&laquo;</a>');
+                  for(var i=1; i<=paging; i++){
+                    if(i === pageno){
+                      $('#pagination').append('<a href="#" id="result_table_retunlist_888" onclick=pagination(\''+i+'\') class="active">'+i+'</a>');
+                    } else {
+                      $('#pagination').append('<a href="#" id="result_table_retunlist_888" onclick=pagination(\''+i+'\')>'+i+'</a>');
+                    }
+                  }
+                  $('#pagination').append('<a href="#" id="result_table_retunlist_888" onclick=pagination(\''+paging+'\')>&raquo;</a>');
+                }
+              } else { // 대출 이력이 없을때
+                $('#result_table_retunlist > tbody:first').append('<tr>'
+                                                                  +'<td colspan="5">1개월간 대출 이력이 없습니다.</td>'
+                                                                  +'</tr>'
+                                                                  );
+              }
+            });
+          });
+          //-----------------------------------------대출이력(API)---------------------------------
+          //====================================================================================
+          //-----------------------------------------비치희망신청내역(API)---------------------------------
+          $('#tab4_atag').click(() => {
+            $('#result_table_furnish > tbody').empty();
+            $('#pagination_furnish > a').remove();
+            var request = require('request');
+            var newDate = new Date();
+            var yyyy = newDate.getFullYear();
+            var mm = newDate.getMonth()+1;
+            var dd = newDate.getDate();
+            if(mm < 10) mm = "0"+mm;
+            if(dd < 10) dd = "0"+dd;
+            var today = yyyy+""+mm+""+dd;
+            var onceyear = yyyy+"0"+1+"0"+1;
+            var rec_key = $('#rec_key_public').val();
+            var pageno = 1;
+            console.log("url : "+url5);
+            $('#pageno_furnish').val(pageno);
+            request(url5, (err, res, body) => {
+              var obj = JSON.parse(body);
+              var obj_v2 = obj.LIST_DATA;
+              console.log(obj);
+              console.log("length : "+obj_v2.length);
+              $('#furnish_cnt').text(obj_v2[0].SEARCH_COUNT);
+              if(obj_v2[0].SEARCH_COUNT !== 0 ){
+                for(var i=1; i<obj_v2.length; i++){
+                  $('#result_table_furnish > tbody:first').append('<tr>'
+                                                                    +'<td>'+obj_v2[i].REC_KEY+'</td>'
+                                                                    +'<td>'+obj_v2[i].TITLE+'</td>'
+                                                                    +'<td>'+obj_v2[i].AUTHOR+'</td>'
+                                                                    +'<td>'+obj_v2[i].ISBN+'</td>'
+                                                                    +'</tr>'
+                                                                    );
+                }
+                var paging_temp = obj_v2[0].SEARCH_COUNT / 10;
+                var paging = Math.floor(paging_temp); // 소수점 버림
+                var pageno = 1;
+                console.log("paging : "+paging);
+                if(paging > 1){
+                  $('#pagination_furnish').append('<a href="#" id="result_table_furnish_888" onclick=pagination_furnish(\''+1+'\')>&laquo;</a>');
+                  for(var i=1; i<=paging; i++){
+                    if(i === pageno){
+                      $('#pagination_furnish').append('<a href="#" id="result_table_furnish_888" onclick=pagination_furnish(\''+i+'\') class="active">'+i+'</a>');
+                    } else {
+                      $('#pagination_furnish').append('<a href="#" id="result_table_furnish_888" onclick=pagination_furnish(\''+i+'\')>'+i+'</a>');
+                    }
+                  }
+                  $('#pagination_furnish').append('<a href="#" id="result_table_furnish_888" onclick=pagination_furnish(\''+paging+'\')>&raquo;</a>');
+                }
+              } else { // 비치신청 이력이 없을때
+                $('#result_table_furnish > tbody:first').append('<tr>'
+                                                                  +'<td colspan="5">비치신청 이력이 없습니다.</td>'
+                                                                  +'</tr>'
+                                                                  );
+              }
+            });
+          });
+          //---------------------------------------------------------------이용자 검색----------------------------------------------------------------------------------------
+
+
+          $("#modify_table_submit").click(() => {
+            var update_first_name = $("#modify_table_first_name").val();
+            var update_last_name  = $("#modify_table_last_name").val();
+            var update_id    = $("#modify_table_id").val();
+            if(update_first_name != undefined && update_last_name != undefined){
+              var update_chk = confirm('수정 하시겠습니까?');
+              if(update_chk){
+                var updatesql = "update contacts set first_name='"+update_first_name+"', last_name='"+update_last_name+"' where id ="+update_id ;
+                console.log(updatesql);
+                conn.query(updatesql, (err, rows) => {
+                  if(err){
+                    return console.log("err : ", err);
+                  } else {
+                    $('#modify_table').hide();
+                    console.log(rows);
+                    return alert('수정 완료');
+                  }
+                });
+              }
+            }
+          });
+        });
+
+        //======================================================대출이력(API) 페이징==========================================================
+        function pagination(pageno){
+          console.log("pageno : "+pageno);
+          $('#result_table_retunlist > tbody').empty();
+            $('#pagination > a').remove();
+          $('#pageno').val(pageno);
+          var request = require('request');
+          var newDate = new Date();
+          var yyyy = newDate.getFullYear();
+          var mm = newDate.getMonth()+1;
+          var dd = newDate.getDate();
+            if(mm < 10) mm = "0"+mm;
+            if(dd < 10) dd = "0"+dd;
+          var today = yyyy+""+mm+""+dd;
+          var onemonthlate = yyyy+""+mm-1+""+dd;
+          var rec_key = $('#rec_key_public').val();
+          request(url4, (err, res, body) => {
+              var obj = JSON.parse(body);
+              var obj_v2 = obj.LIST_DATA;
+              console.log(obj);
+              console.log("length : "+obj_v2.length);
+              if(obj_v2[0].SEARCH_COUNT !== 0 ){
+                              for(var i=1; i<obj_v2.length; i++){
+                  $('#result_table_retunlist > tbody:first').append('<tr>'
+                                                                    +'<td>'+obj_v2[i].TITLE+'</td>'
+                                                                    +'<td>'+obj_v2[i].REC_KEY+'</td>'
+                                                                    +'<td>'+obj_v2[i].REG_NO+'</td>'
+                                                                    +'<td>'+obj_v2[i].LOAN_DATE+'</td>'
+                                                                    +'<td>'+obj_v2[i].RETURN_DATE+'</td>'
+                                                                    +'</tr>'
+                                                                    );
+                }
+                var paging_temp = obj_v2[0].SEARCH_COUNT / 10;
+                var paging = Math.floor(paging_temp); // 소수점 버림
+                console.log("paging : "+paging);
+                var pageno = $('#pageno').val();
+                console.log("구해야할 page no : "+pageno);
+                if(paging > 1){
+                  $('#pagination').append('<a href="#" id="result_table_retunlist_888" onclick=pagination(\''+1+'\')>&laquo;</a>');
+                  for(var i=1; i<=paging; i++){
+                    console.log("i의 값 : "+i);
+                    if(i == pageno){
+                      console.log("i랑 pageno 이랑 같을때 : "+i + " // "+pageno);
+                      $('#pagination').append('<a href="#" id="result_table_retunlist_888" onclick=pagination(\''+i+'\') class="active">'+i+'</a>');
+                    } else {
+                      $('#pagination').append('<a href="#" id="result_table_retunlist_888" onclick=pagination(\''+i+'\')>'+i+'</a>');
+                    }
+                  }
+                  $('#pagination').append('<a href="#" id="result_table_retunlist_888" onclick=pagination(\''+paging+'\')>&raquo;</a>');
+                }
+              } else { // 대출 이력이 없을때
+                $('#result_table_retunlist > tbody:first').append('<tr>'
+                                                                  +'<td colspan="5">1개월간 대출 이력이 없습니다.</td>'
+                                                                  +'</tr>'
+                                                                  );
+              }
+            });
+        }
+        //======================================================비치희망신청이력(API) 페이징==========================================================
+        function pagination_furnish(pageno){
+          console.log("pageno : "+pageno);
+          $('#result_table_furnish > tbody').empty();
+            $('#pagination_furnish > a').remove();
+          $('#pageno_furnish').val(pageno);
+          var request = require('request');
+          var newDate = new Date();
+          var yyyy = newDate.getFullYear();
+          var mm = newDate.getMonth()+1;
+          var dd = newDate.getDate();
+            if(mm < 10) mm = "0"+mm;
+            if(dd < 10) dd = "0"+dd;
+          var today = yyyy+""+mm+""+dd;
+          var onceyear = yyyy+""+01+""+01;
+          var rec_key = $('#rec_key_public').val();
+          request(url5, (err, res, body) => {
+              var obj = JSON.parse(body);
+              var obj_v2 = obj.LIST_DATA;
+              console.log(obj);
+              console.log("length : "+obj_v2.length);
+              if(obj_v2[0].SEARCH_COUNT !== 0 ){
+                              for(var i=1; i<obj_v2.length; i++){
+                  $('#result_table_furnish > tbody:first').append('<tr>'
+                                                                    +'<td>'+obj_v2[i].REC_KEY+'</td>'
+                                                                    +'<td>'+obj_v2[i].TITLE+'</td>'
+                                                                    +'<td>'+obj_v2[i].AUTHOR+'</td>'
+                                                                    +'<td>'+obj_v2[i].ISBN+'</td>'
+                                                                    +'</tr>'
+                                                                    );
+                }
+                var paging_temp = obj_v2[0].SEARCH_COUNT / 10;
+                var paging = Math.floor(paging_temp); // 소수점 버림
+                console.log("paging : "+paging);
+                var pageno = $('#pageno_furnish').val();
+                console.log("구해야할 page no : "+pageno);
+                if(paging > 1){
+                  $('#pagination_furnish').append('<a href="#" id="result_table_furnish_888" onclick=pagination_furnish(\''+1+'\')>&laquo;</a>');
+                  for(var i=1; i<=paging; i++){
+                    console.log("i의 값 : "+i);
+                    if(i == pageno){
+                      console.log("i랑 pageno 이랑 같을때 : "+i + " // "+pageno);
+                      $('#pagination_furnish').append('<a href="#" id="result_table_furnish_888" onclick=pagination_furnish(\''+i+'\') class="active">'+i+'</a>');
+                    } else {
+                      $('#pagination_furnish').append('<a href="#" id="result_table_furnish_888" onclick=pagination_furnish(\''+i+'\')>'+i+'</a>');
+                    }
+                  }
+                  $('#pagination_furnish').append('<a href="#" id="result_table_furnish_888" onclick=pagination_furnish(\''+paging+'\')>&raquo;</a>');
+                }
+              } else { // 비치 이력이 없을때
+                $('#result_table_furnish > tbody:first').append('<tr>'
+                                                                  +'<td colspan="5">비치희망 신청 이력이 없습니다.</td>'
+                                                                  +'</tr>'
+                                                                  );
+              }
+            });
+        }
+        //======================================================비치희망신청내역(API) 페이징==========================================================
+
+        function modify(value){
+          console.log(value);
+          $("#result_table").hide();
+          $("#modify_table").show();
+          var first_name = $("#modify_td_first").text();
+          var last_name  = $("#modify_td_last").text();
+          console.log("fisrt // last : "+first_name + "//" + last_name);
+          $("#modify_table_first_name").val(first_name);
+          $("#modify_table_last_name").val(last_name);
+          $("#modify_table_id").val(value);
+        }
+
+        function enterresult(){
+          if(window.event.keyCode == 13){
+            console.log('enter!!!');
+            $('#select').bind("click", ()=> {// 강제 클릭
+              console.log('select click!!');
+            });
+          $("#select").trigger("click"); // 강제 클릭
+          }
+        }
+
+    </script>
+</html>

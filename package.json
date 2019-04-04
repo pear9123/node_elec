@@ -1,0 +1,54 @@
+{
+  "name": "eletron",
+  "version": "1.0.0",
+  "description": "tutorial for electron",
+  "main": "index.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "npm run build:win32 && npm run build:win64",
+    "build:win32": "build --win --ia32",
+    "build:win64": "build --win --x64"
+  },
+  "author": "hanest",
+  "license": "ISC",
+  "dependencies": {
+    "asar": "^1.0.0",
+    "cheerio": "^1.0.0-rc.2",
+    "express": "^4.16.4",
+    "jquery": "^3.3.1",
+    "mongodb": "^3.2.2",
+    "mongoose": "^5.4.20",
+    "mysql": "^2.16.0",
+    "request": "^2.88.0"
+  },
+  "devDependencies": {
+    "electron-builder": "^20.39.0"
+  },
+  "build": {
+    "productName": "chunghan",
+    "appId": "com.electron.hello",
+    "asar": true,
+    "protocols": {
+      "name": "chunghan",
+      "schemes": [
+        "chunghan"
+      ]
+    },
+    "win": {
+      "target": [
+        "zip",
+        "nsis"
+      ],
+      "icon": "./resources/installer/Icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "directories": {
+      "buildResources": "resources/installer/",
+      "output": "dist/",
+      "app": "."
+    }
+  }
+}
